@@ -1145,21 +1145,15 @@ contestants, and write a function that decides the outcome of a fight!
 rotate :: Int -> [a] -> [a]
 rotate n xs = take (length xs ) . drop n . cycle $ xs
 
-popRotate :: [a] -> (a, [a])
-popRotate xs = (head xs, rotate 1 xs)
-
-newtype Potion = Potion Int
-  deriving (Show)
-
-newtype Spell = Spell Int
-  deriving (Show)
-
 data KnightAction =
-  KnightHeal Health | KnightAttack Attack | KnightSpell Armor
+    KnightHeal Health 
+  | KnightAttack Attack 
+  | KnightSpell Armor
   deriving (Show)
 
 data MonsterAction =
-  MonsterAttack Attack | MonsterRun
+    MonsterAttack Attack 
+  | MonsterRun
   deriving (Show)
 
 data Knight = Knight
@@ -1174,8 +1168,8 @@ data Monster = Monster
   } deriving (Show)
 
 class Fighter a where
-  attack :: a -> Attack -> a
   health :: a -> Health
+  attack :: a -> Attack -> a
   act :: (Fighter b) => a -> b -> (a,b)
 
 instance Fighter Knight where
@@ -1184,10 +1178,8 @@ instance Fighter Knight where
     knight { kHealth = Health $ kHealth + netDamage }
     where blockedDamage = kArmor - damage
           netDamage = if blockedDamage > 0 then 0 else blockedDamage
-  act knight@(Knight kHealth actions kArmor) enemy = doAction' toPerform
-    where toPerform = head actions
-          remainingActions = rotate 1 actions
-          nextKnight = knight { kActions = remainingActions }
+  act knight@(Knight kHealth actions kArmor) enemy = doAction' $ head actions
+    where nextKnight = knight { kActions = rotate 1 actions }
           doAction' (KnightHeal hp) = (nextKnight { kHealth = kHealth + hp}, enemy)
           doAction' (KnightAttack damage) = (nextKnight, attack enemy damage)
           doAction' (KnightSpell armor) = (nextKnight { kArmor = kArmor + armor}, enemy)
@@ -1196,11 +1188,9 @@ instance Fighter Monster where
   health = mHealth
   attack monster@(Monster (Health mHealth) _) (Attack damage) =
      monster {mHealth = Health $ mHealth - damage}
-  act monster@(Monster health actions) enemy = doAction' toPerform
-    where toPerform = head actions
-          remainingActions = rotate 1 actions
-          nextMonster = monster { mActions = remainingActions }
-          doAction' (MonsterAttack attkPts) = (nextMonster, attack enemy attkPts)
+  act monster@(Monster health actions) enemy = doAction' $ head actions
+    where nextMonster = monster { mActions = rotate 1 actions }
+          doAction' (MonsterAttack damage) = (nextMonster, attack enemy damage)
           doAction' (MonsterRun) = (nextMonster { mHealth = Health 0}, enemy)
 
 battle :: (Fighter a, Fighter b) => (a,b) -> (a,b)
@@ -1210,9 +1200,9 @@ battle (a,b)
   | otherwise = battle . stepFight $ (a,b)
 
 stepFight :: (Fighter a, Fighter b) => (a,b) -> (a,b)
-stepFight (a,b) =if health b <= 0 then afterA else swap afterB
+stepFight (a,b) = if health b <= 0 then afterA else swap afterB
   where afterA = act a b
-        afterB = act (snd afterA) (fst afterA)
+        afterB = uncurry act . swap $ afterA
 
 myHero = Knight
   { kHealth = Health 20
