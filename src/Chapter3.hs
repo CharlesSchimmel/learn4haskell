@@ -1175,28 +1175,28 @@ data Monster = Monster
 
 class Fighter a where
   attack :: a -> Attack -> a
-  hasHealth :: a -> Health
-  doAction :: (Fighter b) => a -> b -> (a,b)
+  health :: a -> Health
+  act :: (Fighter b) => a -> b -> (a,b)
 
 instance Fighter Knight where
-  hasHealth = kHealth
+  health = kHealth
   attack knight@(Knight (Health kHealth) _ (Armor kArmor)) (Attack damage) = 
     knight { kHealth = Health $ kHealth + netDamage }
     where blockedDamage = kArmor - damage
           netDamage = if blockedDamage > 0 then 0 else blockedDamage
-  doAction knight@(Knight health actions armor) enemy = doAction' toPerform
+  act knight@(Knight kHealth actions kArmor) enemy = doAction' toPerform
     where toPerform = head actions
           remainingActions = rotate 1 actions
           nextKnight = knight { kActions = remainingActions }
-          doAction' (KnightHeal hp) = (nextKnight { kHealth = kHealth nextKnight + hp}, enemy)
-          doAction' (KnightAttack attackPts ) = (nextKnight, attack enemy attackPts)
-          doAction' (KnightSpell armor) = (nextKnight { kArmor = kArmor nextKnight + armor}, enemy)
+          doAction' (KnightHeal hp) = (nextKnight { kHealth = kHealth + hp}, enemy)
+          doAction' (KnightAttack damage) = (nextKnight, attack enemy damage)
+          doAction' (KnightSpell armor) = (nextKnight { kArmor = kArmor + armor}, enemy)
 
 instance Fighter Monster where
-  hasHealth = mHealth
+  health = mHealth
   attack monster@(Monster (Health mHealth) _) (Attack damage) =
      monster {mHealth = Health $ mHealth - damage}
-  doAction monster@(Monster health actions) enemy = doAction' toPerform
+  act monster@(Monster health actions) enemy = doAction' toPerform
     where toPerform = head actions
           remainingActions = rotate 1 actions
           nextMonster = monster { mActions = remainingActions }
@@ -1205,14 +1205,14 @@ instance Fighter Monster where
 
 battle :: (Fighter a, Fighter b) => (a,b) -> (a,b)
 battle (a,b)
-  | hasHealth a <= 0 = (a,b)
-  | hasHealth b <= 0 = (a,b)
+  | health a <= 0 = (a,b)
+  | health b <= 0 = (a,b)
   | otherwise = battle . stepFight $ (a,b)
 
 stepFight :: (Fighter a, Fighter b) => (a,b) -> (a,b)
-stepFight (a,b) =if hasHealth b <= 0 then afterA else swap afterB
-  where afterA = doAction a b
-        afterB = doAction (snd afterA) (fst afterA)
+stepFight (a,b) =if health b <= 0 then afterA else swap afterB
+  where afterA = act a b
+        afterB = act (snd afterA) (fst afterA)
 
 myHero = Knight
   { kHealth = Health 20
