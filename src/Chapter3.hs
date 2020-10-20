@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs #-}
 
 {- 👋 Welcome to Chapter Three of our journey, Courageous Knight!
 
@@ -37,7 +38,6 @@ your solutions.
 
 Okay. Ready? Set. Go!
 -}
-
 {-
 =⚗️= Language extensions*
 
@@ -51,8 +51,6 @@ In this module, we enable the "InstanceSigs" feature that allows writing type
 signatures in places where you can't by default. We believe it's helpful to
 provide more top-level type signatures, especially when learning Haskell.
 -}
-{-# LANGUAGE InstanceSigs #-}
-
 module Chapter3 where
 
 import Data.Tuple
@@ -73,7 +71,6 @@ are far more complicated!
 Haskell has several different ways to create entirely new data types. Let's talk
 about them all and master our skill of data types construction.
 -}
-
 {- |
 =🛡= Type aliases
 
@@ -118,7 +115,6 @@ Usually, you are encouraged to introduce new data types instead of using aliases
 for existing types. But it is still good to know about type aliases. They have a
 few use-cases, and you can meet them in various Haskell libraries as well.
 -}
-
 {- |
 =🛡= ADT
 
@@ -164,7 +160,6 @@ BookShelf:
   concept of data types in Haskell, and that's why they are called Algebraic Data
   Types.
 -}
-
 {- |
 =🛡= Product type
 
@@ -341,7 +336,6 @@ ghci>
 Although, it may be easier to define data types in the module, and load it
 afterwards.
 -}
-
 {- |
 =⚔️= Task 1
 
@@ -349,7 +343,6 @@ Define the Book product data type. You can take inspiration from our description
 of a book, but you are not limited only by the book properties we described.
 Create your own book type of your dreams!
 -}
-
 data Author = Author
   { firstName :: String
   , lastName :: String
@@ -390,19 +383,22 @@ after the fight. The battle has the following possible outcomes:
    doesn't earn any money and keeps what they had before.
 
 -}
-
 data Creature = Creature
-    { _health :: Int
-    , _attack :: Int
-    , _gold   :: Int
-    } deriving (Show)
+  { _health :: Int
+  , _attack :: Int
+  , _gold :: Int
+  } deriving (Show)
 
 fight :: Creature -> Creature -> Int
-fight (Creature kHealth kAttack kGold) (Creature mHealth mAttack mGold ) = resolve
-  where 
+fight (Creature kHealth kAttack kGold) (Creature mHealth mAttack mGold) =
+  resolve
+  where
     mHealth' = mHealth - kAttack
-    kHealth' = if mHealth' >= 0 then (kHealth - mAttack) else kHealth
-    resolve 
+    kHealth' =
+      if mHealth' >= 0
+        then (kHealth - mAttack)
+        else kHealth
+    resolve
       | mHealth' <= 0 = kGold + mGold
       | mHealth' > 0 && kHealth' <= 0 = -1
       | otherwise = kGold
@@ -485,15 +481,19 @@ concept of product types and sum types is called __Algebraic Data Type__. They
 allow you to model your domain precisely, make illegal states unrepresentable
 and provide more flexibility when working with data types.
 -}
-
 {- |
 =⚔️= Task 3
 
 Create a simple enumeration for the meal types (e.g. breakfast). The one who
 comes up with the most number of names wins the challenge. Use your creativity!
 -}
-
-data Meals = Breakfast | Lunch | Supper | Dinner | Dessert | MidnightSnack
+data Meals
+  = Breakfast
+  | Lunch
+  | Supper
+  | Dinner
+  | Dessert
+  | MidnightSnack
 
 {- |
 =⚔️= Task 4
@@ -514,48 +514,52 @@ After defining the city, implement the following functions:
    complicated task, walls can be built only if the city has a castle
    and at least 10 living __people__ inside in all houses of the city totally.
 -}
+data Wall =
+  Wall
+  deriving (Show)
 
-
-data Wall = Wall
-  deriving Show
-
-data Castle = Castle 
+data Castle = Castle
   { name :: String
   , wall :: Maybe Wall
-  }
-  deriving Show
+  } deriving (Show)
 
-data House = House { residents :: Residents}
-  deriving Show
+data House = House
+  { residents :: Residents
+  } deriving (Show)
 
-data Residents = One | Two | Three | Four
-  deriving Show
+data Residents
+  = One
+  | Two
+  | Three
+  | Four
+  deriving (Show)
 
 residentCount One = 1
 residentCount Two = 2
 residentCount Three = 3
 residentCount Four = 4
 
-data CommunityBuilding = Library | Church
-  deriving Show
+data CommunityBuilding
+  = Library
+  | Church
+  deriving (Show)
 
 data City = City
   { castle :: Maybe Castle
   , houses :: [House]
   , communityBuilding :: CommunityBuilding
-  }
-  deriving Show
+  } deriving (Show)
 
 buildCastle :: City -> String -> City
-buildCastle city castleName = city { castle = Just $ Castle castleName Nothing}
+buildCastle city castleName = city {castle = Just $ Castle castleName Nothing}
 
 buildHouse :: City -> House -> City
-buildHouse city@(City _ houses _) house = city { houses = house : houses}
+buildHouse city@(City _ houses _) house = city {houses = house : houses}
 
 buildWalls :: City -> City
 buildWalls city@(City Nothing _ _) = city
 buildWalls city@(City (Just castle@(Castle _ wall)) houses _)
-  | population city >= 10 = city { castle = Just $ castle { wall = Just Wall}}
+  | population city >= 10 = city {castle = Just $ castle {wall = Just Wall}}
   | otherwise = city
 
 population city = sum $ map (residentCount . residents) $ houses city
@@ -630,7 +634,6 @@ And to run it you won't be able to mess arguments:
 
 ghci> myBMI (Height 200) (Weight 70)
 -}
-
 {-
 =⚔️= Task 5
 
@@ -640,28 +643,33 @@ introducing extra newtypes.
 🕯 HINT: if you complete this task properly, you don't need to change the
     implementation of the "hitPlayer" function at all!
 -}
-newtype Health = Health { unHealth :: Int }
+newtype Health = Health
+  { unHealth :: Int
+  } deriving (Show, Eq, Ord, Num)
+
+newtype Armor =
+  Armor Int
   deriving (Show, Eq, Ord, Num)
 
-newtype Armor = Armor Int
+newtype Attack =
+  Attack Int
   deriving (Show, Eq, Ord, Num)
 
-newtype Attack = Attack Int
+newtype Dexterity =
+  Dexterity Int
   deriving (Show, Eq, Ord, Num)
 
-newtype Dexterity = Dexterity Int
-  deriving (Show, Eq, Ord, Num)
-
-newtype Strength = Strength Int
+newtype Strength =
+  Strength Int
   deriving (Show, Eq, Ord, Num)
 
 data Player = Player
-    { playerHealth    :: Health
-    , playerArmor     :: Armor
-    , playerAttack    :: Attack
-    , playerDexterity :: Dexterity
-    , playerStrength  :: Strength
-    }
+  { playerHealth :: Health
+  , playerArmor :: Armor
+  , playerAttack :: Attack
+  , playerDexterity :: Dexterity
+  , playerStrength :: Strength
+  }
 
 calculatePlayerDamage :: Attack -> Strength -> Int
 calculatePlayerDamage (Attack attack) (Strength strength) = attack + strength
@@ -670,22 +678,18 @@ calculatePlayerDefense :: Armor -> Dexterity -> Int
 calculatePlayerDefense (Armor armor) (Dexterity dexterity) = armor * dexterity
 
 calculatePlayerHit :: Int -> Int -> Health -> Health
-calculatePlayerHit damage defense (Health health) = Health $ health + defense - damage
+calculatePlayerHit damage defense (Health health) =
+  Health $ health + defense - damage
 
 -- The second player hits first player and the new first player is returned
 hitPlayer :: Player -> Player -> Player
 hitPlayer player1 player2 =
-    let damage = calculatePlayerDamage
-            (playerAttack player2)
-            (playerStrength player2)
-        defense = calculatePlayerDefense
-            (playerArmor player1)
-            (playerDexterity player1)
-        newHealth = calculatePlayerHit
-            damage
-            defense
-            (playerHealth player1)
-    in player1 { playerHealth = newHealth }
+  let damage =
+        calculatePlayerDamage (playerAttack player2) (playerStrength player2)
+      defense =
+        calculatePlayerDefense (playerArmor player1) (playerDexterity player1)
+      newHealth = calculatePlayerHit damage defense (playerHealth player1)
+   in player1 {playerHealth = newHealth}
 
 {- |
 =🛡= Polymorphic data types
@@ -825,7 +829,6 @@ data List a
   the "Cons" constructor. This is done to tell the compiler that "List" and "a"
   should go together as one type.
 -}
-
 {- |
 =⚔️= Task 6
 
@@ -847,7 +850,6 @@ parametrise data types in places where values can be of any general type.
 🕯 HINT: 'Maybe' that some standard types we mentioned above are useful for
   maybe-treasure ;)
 -}
-
 data TreasureChest a = TreasureChest
   { gold_ :: Int
   , treasure :: a
@@ -998,7 +1000,6 @@ This instance is suitable for any Maybe as long as the instance of the inside
 type exists. You can see how we reuse the fact that the underlying type has this
 instance and apply this typeclass method to it.
 -}
-
 {- |
 =⚔️= Task 7
 
@@ -1017,19 +1018,20 @@ Implement instances of "Append" for the following types:
 
 -}
 class Append a where
-    append :: a -> a -> a
+  append :: a -> a -> a
 
 instance Append Int where
   append = (+)
 
-newtype Gold = Gold Int deriving (Show, Append)
+newtype Gold =
+  Gold Int
+  deriving (Show, Append)
 
 instance Append [a] where
   append = (++)
 
 instance Append a => Append (Maybe a) where
   append a b = append <$> a <*> b
-
 
 {-
 =🛡= Standard Typeclasses and Deriving
@@ -1077,7 +1079,6 @@ ghci> show (Princess "Anna")
 Princess {princessName = "Anna"}
 
 -}
-
 {-
 =⚔️= Task 8
 
@@ -1090,8 +1091,14 @@ implement the following functions:
 
 🕯 HINT: to implement this task, derive some standard typeclasses
 -}
-
-data Day = Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday
+data Day
+  = Monday
+  | Tuesday
+  | Wednesday
+  | Thursday
+  | Friday
+  | Saturday
+  | Sunday
   deriving (Show, Enum)
 
 isWeekend :: Day -> Bool
@@ -1143,16 +1150,16 @@ Implement data types and typeclasses, describing such a battle between two
 contestants, and write a function that decides the outcome of a fight!
 -}
 rotate :: Int -> [a] -> [a]
-rotate n xs = take (length xs ) . drop n . cycle $ xs
+rotate n xs = take (length xs) . drop n . cycle $ xs
 
-data KnightAction =
-    KnightHeal Health 
-  | KnightAttack Attack 
+data KnightAction
+  = KnightHeal Health
+  | KnightAttack Attack
   | KnightSpell Armor
   deriving (Show)
 
-data MonsterAction =
-    MonsterAttack Attack 
+data MonsterAction
+  = MonsterAttack Attack
   | MonsterRun
   deriving (Show)
 
@@ -1170,57 +1177,63 @@ data Monster = Monster
 class Fighter a where
   health :: a -> Health
   attack :: a -> Attack -> a
-  act :: (Fighter b) => a -> b -> (a,b)
+  act :: (Fighter b) => a -> b -> (a, b)
 
 instance Fighter Knight where
   health = kHealth
-  attack knight@(Knight (Health kHealth) _ (Armor kArmor)) (Attack damage) = 
-    knight { kHealth = Health $ kHealth + netDamage }
-    where blockedDamage = kArmor - damage
-          netDamage = if blockedDamage > 0 then 0 else blockedDamage
+  attack knight@(Knight (Health kHealth) _ (Armor kArmor)) (Attack damage) =
+    knight {kHealth = Health $ kHealth + netDamage}
+    where
+      blockedDamage = kArmor - damage
+      netDamage =
+        if blockedDamage > 0
+          then 0
+          else blockedDamage
   act knight@(Knight kHealth actions kArmor) enemy = doAction' $ head actions
-    where nextKnight = knight { kActions = rotate 1 actions }
-          doAction' (KnightHeal hp) = (nextKnight { kHealth = kHealth + hp}, enemy)
-          doAction' (KnightAttack damage) = (nextKnight, attack enemy damage)
-          doAction' (KnightSpell armor) = (nextKnight { kArmor = kArmor + armor}, enemy)
+    where
+      nextKnight = knight {kActions = rotate 1 actions}
+      doAction' (KnightHeal hp) = (nextKnight {kHealth = kHealth + hp}, enemy)
+      doAction' (KnightAttack damage) = (nextKnight, attack enemy damage)
+      doAction' (KnightSpell armor) =
+        (nextKnight {kArmor = kArmor + armor}, enemy)
 
 instance Fighter Monster where
   health = mHealth
   attack monster@(Monster (Health mHealth) _) (Attack damage) =
-     monster {mHealth = Health $ mHealth - damage}
+    monster {mHealth = Health $ mHealth - damage}
   act monster@(Monster health actions) enemy = doAction' $ head actions
-    where nextMonster = monster { mActions = rotate 1 actions }
-          doAction' (MonsterAttack damage) = (nextMonster, attack enemy damage)
-          doAction' (MonsterRun) = (nextMonster { mHealth = Health 0}, enemy)
+    where
+      nextMonster = monster {mActions = rotate 1 actions}
+      doAction' (MonsterAttack damage) = (nextMonster, attack enemy damage)
+      doAction' (MonsterRun) = (nextMonster {mHealth = Health 0}, enemy)
 
-battle :: (Fighter a, Fighter b) => (a,b) -> (a,b)
-battle (a,b)
-  | health a <= 0 = (a,b)
-  | health b <= 0 = (a,b)
-  | otherwise = battle . stepFight $ (a,b)
+battle :: (Fighter a, Fighter b) => (a, b) -> (a, b)
+battle (a, b)
+  | health a <= 0 = (a, b)
+  | health b <= 0 = (a, b)
+  | otherwise = battle . stepFight $ (a, b)
 
-stepFight :: (Fighter a, Fighter b) => (a,b) -> (a,b)
-stepFight (a,b) = if health b <= 0 then afterA else swap afterB
-  where afterA = act a b
-        afterB = uncurry act . swap $ afterA
+stepFight :: (Fighter a, Fighter b) => (a, b) -> (a, b)
+stepFight (a, b) =
+  if health b <= 0
+    then afterA
+    else swap afterB
+  where
+    afterA = act a b
+    afterB = uncurry act . swap $ afterA
 
-myHero = Knight
-  { kHealth = Health 20
-  , kArmor = Armor 10
-  , kActions = [KnightAttack 10, KnightSpell 10 ]
-  }
+myHero =
+  Knight
+    { kHealth = Health 20
+    , kArmor = Armor 10
+    , kActions = [KnightAttack 10, KnightSpell 10]
+    }
 
-baddy = Monster
-  { mHealth = 30
-  , mActions = [MonsterAttack 20]
-  }
-
-
+baddy = Monster {mHealth = 30, mActions = [MonsterAttack 20]}
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
 -}
-
 {-
 =📜= Additional resources
 Deriving: https://kowainik.github.io/posts/deriving

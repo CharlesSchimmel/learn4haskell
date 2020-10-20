@@ -36,9 +36,8 @@ if you want some feedback on your solutions.
 
 Perfect. Let's crush this!
 -}
-
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE InstanceSigs    #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Chapter4 where
 
@@ -102,7 +101,6 @@ Eq :: * -> Constraint
 
 We hope kinds will become your kind friends by the end of this chapter :)
 -}
-
 {- |
 =⚔️= Task 1
 
@@ -114,25 +112,32 @@ As always, try to guess the output first! And don't forget to insert
 the output in here:
 
 >>> :k Char
+Char :: *
 
 >>> :k Bool
+Bool :: *
 
 >>> :k [Int]
+[Int] :: *
 
 >>> :k []
+[] :: * -> *
 
 >>> :k (->)
+(->) :: * -> * -> *
 
 >>> :k Either
+Either :: * -> * -> *
 
 >>> data Trinity a b c = MkTrinity a b c
 >>> :k Trinity
+Trinity :: * -> * -> * -> *
 
 >>> data IntBox f = MkIntBox (f Int)
 >>> :k IntBox
+IntBox :: (* -> *) -> *
 
 -}
-
 {- |
 =🛡= Functor
 
@@ -267,7 +272,6 @@ instance Functor Maybe where
     fmap _ x = x
 @
 -}
-
 {- |
 =⚔️= Task 2
 
@@ -278,10 +282,9 @@ until opened! But the 'Functor' instance allows changing the reward
 inside, so it is quite handy.
 -}
 data Secret e a
-    = Trap e
-    | Reward a
-    deriving (Show, Eq)
-
+  = Trap e
+  | Reward a
+  deriving (Show, Eq)
 
 {- |
 Functor works with types that have kind `* -> *` but our 'Secret' has
@@ -292,8 +295,9 @@ we can reuse already known concepts (e.g. partial application) from
 values and apply them to the type level?
 -}
 instance Functor (Secret e) where
-    fmap :: (a -> b) -> Secret e a -> Secret e b
-    fmap = error "fmap for Box: not implemented!"
+  fmap :: (a -> b) -> Secret e a -> Secret e b
+  fmap _ (Trap e) = Trap e
+  fmap f (Reward a) = Reward (f a)
 
 {- |
 =⚔️= Task 3
@@ -304,8 +308,15 @@ purposes, let's practise our skills on implementing standard
 typeclasses for standard data types.
 -}
 data List a
-    = Empty
-    | Cons a (List a)
+  = Empty
+  | Cons a
+         (List a)
+  deriving (Show)
+
+instance Functor List where
+  fmap :: (a -> b) -> List a -> List b
+  fmap _ Empty = Empty
+  fmap f (Cons a rest) = Cons (f a) (fmap f rest)
 
 {- |
 =🛡= Applicative
@@ -464,18 +475,17 @@ Applicatives can be found in many applications:
  ✦ Input form validation
  ✦ Concurrent and parallel execution of tasks
 -}
-
 {- |
 =⚔️= Task 4
 
 Implement the Applicative instance for our 'Secret' data type from before.
 -}
 instance Applicative (Secret e) where
-    pure :: a -> Secret e a
-    pure = error "pure Secret: Not implemented!"
-
-    (<*>) :: Secret e (a -> b) -> Secret e a -> Secret e b
-    (<*>) = error "(<*>) Secret: Not implemented!"
+  pure :: a -> Secret e a
+  pure = Reward
+  (<*>) :: Secret e (a -> b) -> Secret e a -> Secret e b
+  (<*>) (Trap e) _ = Trap e
+  (<*>) (Reward f) s = fmap f s
 
 {- |
 =⚔️= Task 5
@@ -488,7 +498,13 @@ Implement the 'Applicative' instance for our 'List' type.
   may also need to implement a few useful helper functions for our List
   type.
 -}
-
+instance Applicative List where
+  pure :: a -> List a
+  pure a = Cons a Empty
+  (<*>) :: List (a -> b) -> List a -> List b
+  (<*>) Empty _ = Empty
+  (<*>) (Cons _ _) Empty = Empty
+  (<*>) (Cons f fs) (Cons a as) = Cons (f a) (fs <*> as)
 
 {- |
 =🛡= Monad
@@ -543,8 +559,8 @@ but only if the number is even.
 -}
 half :: Int -> Maybe Int
 half n
-    | even n = Just (div n 2)
-    | otherwise = Nothing
+  | even n = Just (div n 2)
+  | otherwise = Nothing
 
 {- |
 
@@ -592,15 +608,15 @@ fmap  ::   (a -> b) -> f a -> f b
 All type signatures look similar, but they represent different
 concepts in the end.
 -}
-
 {- |
 =⚔️= Task 6
 
 Implement the 'Monad' instance for our 'Secret' type.
 -}
 instance Monad (Secret e) where
-    (>>=) :: Secret e a -> (a -> Secret e b) -> Secret e b
-    (>>=) = error "bind Secret: Not implemented!"
+  (>>=) :: Secret e a -> (a -> Secret e b) -> Secret e b
+  (>>=) (Trap e) _ = Trap e
+  (>>=) (Reward a) fn = fn a
 
 {- |
 =⚔️= Task 7
@@ -610,7 +626,15 @@ Implement the 'Monad' instance for our lists.
 🕯 HINT: You probably will need to implement a helper function (or
   maybe a few) to flatten lists of lists to a single list.
 -}
+instance Monad List where
+  (>>=) :: List a -> (a -> List b) -> List b
+  (>>=) Empty _ = Empty
+  (>>=) (Cons a as) fn = append (fn a) (as >>= fn)
 
+append :: List a -> List a -> List a
+append Empty l = l
+append l Empty = l
+append (Cons a as) bs = Cons a (append as bs)
 
 {- |
 =💣= Task 8*: Before the Final Boss
@@ -629,7 +653,7 @@ Can you implement a monad version of AND, polymorphic over any monad?
 🕯 HINT: Use "(>>=)", "pure" and anonymous function
 -}
 andM :: (Monad m) => m Bool -> m Bool -> m Bool
-andM = error "andM: Not implemented!"
+andM ma mb = ma >>= (\a -> mb >>= (\b -> pure (a && b)))
 
 {- |
 =🐉= Task 9*: Final Dungeon Boss
@@ -672,9 +696,26 @@ Specifically,
    subtree of a tree
  ❃ Implement the function to convert Tree to list
 -}
+data Tree a
+  = Node a
+         (Tree a)
+         (Tree a)
+  | Leaf a
+  deriving (Show)
 
+instance Functor Tree where
+  fmap :: (a -> b) -> Tree a -> Tree b
+  fmap fn (Leaf a) = Leaf $ fn a
+  fmap fn (Node x a b) = Node (fn x) (fmap fn a) (fmap fn b)
 
-{-
+flatten :: Tree a -> [a]
+flatten (Leaf a) = [a]
+flatten (Node x a b) = x : flatten a ++ flatten b
+
+reverseTree :: Tree a -> Tree a
+reverseTree (Leaf a) = Leaf a
+reverseTree (Node x a b) = Node x (reverseTree b) (reverseTree a)
+  {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
 -}
